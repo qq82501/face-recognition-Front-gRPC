@@ -1,6 +1,6 @@
 import React from "react";
 
-const Navigation = ({isSignIn, onRouteChange}) =>{
+const Navigation = ({isSignIn, onRouteChange, onLogOut}) =>{
     if(isSignIn){
         return(
             <nav style={{display:'flex' ,justifyContent:'flex-end'}}>

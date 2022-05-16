@@ -11,13 +11,9 @@ import Particles from 'react-tsparticles';
 import {loadFull} from 'tsparticles';
 import {tsParticles} from 'tsparticles-engine';
 import { Component } from 'react';
-import Clarifai from 'clarifai';
 
-const app = new Clarifai.App({
-  apiKey: 'f16ef33efb474f13a3ec7475ce88aff2'
- });
+
 const particlesInit = async (main) => {
-  console.log(main);
 
     // you can initialize the tsParticles instance (main) here, adding custom shapes or presets
   // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
@@ -26,7 +22,6 @@ const particlesInit = async (main) => {
 };
 
 const particlesLoaded = (container) => {
-  console.log(container);
 
   
 };
@@ -38,7 +33,7 @@ const particlesOptions ={
     detect_on: 'window',
     events: {
       onClick: { 
-        enable: true,
+        enable: false,
         mode: "push",
       },
       onHover: {
@@ -78,7 +73,7 @@ const particlesOptions ={
         default: "bounce",
       },
       random: false,
-      speed: 3,
+      speed: 2,
       straight: false,
     },
     number: {
@@ -86,7 +81,7 @@ const particlesOptions ={
         enable: true,
         area: 1000,
       },
-      value: 70,
+      value: 150,
     },
     opacity: {
       value: 0.5,
@@ -100,25 +95,39 @@ const particlesOptions ={
   },
   detectRetina: true,
 }
-
-class App extends Component {
-  constructor(){
-    super();
-    this.state={
-      input:'',
+const initailState = {
+  input:'',
       imageURL:'',
       box: {},
       route: 'signin',
-      isSignIn: false
-    }
+      isSignIn: false,
+      user:{
+        id: '',
+        name: '',
+        email: '',
+        imageSent: true,
+        entries: '',
+        joined: ''
+      }
+  
+}
+class App extends Component {
+  constructor(){
+    super();
+    this.state= initailState
   }
+
+  // componentDidMount(){
+  //   fetch('http://localhost:3001/')
+  //     .then(res=>res.json())
+  //     .then(data=>console.log(data))
+  // }
 
   calculateFaceLocation = (data) =>{
     const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById('inputImage');
     const width = Number(image.width);
     const height = Number(image.height);
-    console.log(width, height,clarifaiFace);
     return{
       leftCol: clarifaiFace.left_col * width,
       topRow: clarifaiFace.top_row * height,
@@ -129,34 +138,79 @@ class App extends Component {
   }
 
   displayFaceBox = (box) => {
-    console.log('box',box);
     this.setState({box: box});
   }
+
+  loadUser = (theUser) =>{
+    // fetch(`http://localhost:3001/profile/${u.id}`)
+    // .then(res => res.json())
+    // .then(theUser =>{
+      this.setState({
+        user:{
+          id: theUser.id,
+          name: theUser.name,
+          email: theUser.email,
+          entries: theUser.entries,
+          imageSent: theUser.imageSent,
+          joined: theUser.joined
+        }
+      })
+      console.log(theUser);
+    // })
+
+  }
+
 
   onInputChange = (event) =>{
     this.setState({input:event.target.value})
   } 
 
   onButtonSubmit = () =>{
-    console.log('submit');
-    this.setState({imageURL:this.state.input})
-    app.models.predict(
-      Clarifai.FACE_DETECT_MODEL,
-      this.state.input)
-  .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
-  .catch(error=>console.log('1',error));
+    if(!this.state.input.match(/http|www|jpg|png|https/gi)){
+      console.log('please enter valid URL')
+    }else{
+      this.setState({imageURL:this.state.input})
+      fetch('https://face-recognition-api-heroku.herokuapp.com/imageurl',{
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:JSON.stringify({
+          imageURL: this.state.input
+        })
+      })
+    .then(response => response.json())
+    .then(response => {
+      if(response){
+        fetch('https://face-recognition-api-heroku.herokuapp.com/image',{
+          method:'PUT',
+          headers:{'Content-Type': 'application/json'},
+          body:JSON.stringify({
+                  id: this.state.user.id
+          })
+        })
+        .then(res => res.json())
+        .then(count => {
+          this.setState(Object.assign(this.state.user,{entries: count}))
+        })
+        .catch(console.log);
+      }
+      this.displayFaceBox(this.calculateFaceLocation(response))
+  })
+
+    }
+
   }
 
   onRouteChange = (route) =>{
     if (route === 'home'){
       this.setState({isSignIn: true})
-    }else{
-      this.setState({isSignIn: false})
+    }
+    else if (route === 'signin'){
+      this.setState(initailState)
     }
     this.setState({route: route});
   }
   render(){
-    const {input, imageURL, box, route, isSignIn} = this.state;
+    const {input, imageURL, box, route, isSignIn, user, isLogOut} = this.state;
 
     return (
       <div className="App">
@@ -169,16 +223,16 @@ class App extends Component {
        
         <Navigation isSignIn={isSignIn} onRouteChange={this.onRouteChange} />
         { route === 'signin' 
-          ? (<SignIn onRouteChange = {this.onRouteChange} />)
+          ? (<SignIn loadUser={this.loadUser} onRouteChange = {this.onRouteChange} />)
           :( 
               route === 'register' 
-                ? ( <Register onRouteChange={this.onRouteChange}/>)
+                ? ( <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange}/>)
                 :
                   <div>
                     <Logo />
-                    <Rank />
-                    <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
-                    <FaceRecognition box={box} imageURL={imageURL} />
+                    <Rank loadedUserName = {user.name} loadedUserEntries = {user.entries}/>
+                    <ImageLinkForm isSignIn={isSignIn} isLogOut={isLogOut} onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
+                    <FaceRecognition box={box} imageURL={imageURL}/>
                   </div>
         )}
       </div>
