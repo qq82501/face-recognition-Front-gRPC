@@ -1,7 +1,6 @@
 {
   "name": "face-recognition",
   "version": "0.1.0",
-  "homepage": "https://qq82501.github.io/face-recognition-Front/",
   "private": true,
   "comments": {
     "dependencies": [
