@@ -6,7 +6,7 @@
     "dependencies": [
       "temporarily editing react-scripts from v5.0.1 to v4.0.2",
       "for practicing to put the API in frontend. While this part has finished,",
-      "edit back to v5.0.1"
+      "edit back to v5.0.1   /* start: serve -s build,*/"
     ]
   },
   "dependencies": {

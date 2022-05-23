@@ -170,7 +170,7 @@ class App extends Component {
       console.log('please enter valid URL')
     }else{
       this.setState({imageURL:this.state.input})
-      fetch('https://face-recognition-api-heroku.herokuapp.com/imageurl',{
+      fetch('https://face-recognition-api-grpc.herokuapp.com/imageurl',{
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body:JSON.stringify({
@@ -180,7 +180,7 @@ class App extends Component {
     .then(response => response.json())
     .then(response => {
       if(response){
-        fetch('https://face-recognition-api-heroku.herokuapp.com/image',{
+        fetch('https://face-recognition-api-grpc.herokuapp.com/image',{
           method:'PUT',
           headers:{'Content-Type': 'application/json'},
           body:JSON.stringify({
